@@ -3,13 +3,14 @@ import time
 import queue
 import sys
 import json
-import binascii
 import random
 import UniquePriorityQueue
 import Node
 import Block
 import Transaction
 from hashlib import sha256 as H
+from nacl.encoding import HexEncoder
+
 
 exitFlag = 0
 
@@ -119,7 +120,7 @@ firstTX = Transaction(tempTX['number'], tempTX['input'], tempTX['output'], tempT
 # Hash of arbitrary data for prev and nonce
 prev = H(b'Hello ').hexdigest()
 pow = H(b'World!').hexdigest()
-nonce = binascii.hexlify(b'Hello World!')
+nonce = HexEncoder.encode(b'Hello World!')
 
 
 # create the genesis block
