@@ -17,4 +17,13 @@ class Block:
     def getPow(self):
         return self.pow
 
+    def toString(self):
+        #May have to convert nonce to hex later
+        data = {}
+        data['tx'] = self.transaction.toString()
+        data['prev'] = self.prev
+        data['nonce'] = self.nonce
+        data['pow'] = self.pow
+        return data
+
 
