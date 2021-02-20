@@ -53,22 +53,18 @@ class nodeThread(threading.Thread):
     # This method processes boradcasts
     def processBroadcast(self):
         if not self.broadcastQList[self.threadID].empty():
-            locked = broadcastLock.acquire(blocking=False)
-            # Check if the thread has the block
-            if locked:
-                while not self.broadcastQList[self.threadID].empty():
-                    broadcast = self.broadcastQList[self.threadID].get()
+            while not self.broadcastQList[self.threadID].empty():
+                broadcast = self.broadcastQList[self.threadID].get()
                 
-                    # Check if the block is valid
-                    valid = self.node.verify(broadcast)
-                    if valid is not None:
-                        count = 0
-                        # flood validated block to other queues
-                        for q in self.broadcastQList:
-                            if count != self.threadID:
-                                q.put(broadcast)
-                            count += 1
-            broadcastLock.release()
+                # Check if the block is valid
+                valid = self.node.verify(broadcast)
+                if valid is not None:
+                    count = 0
+                    # flood validated block to other queues
+                    for q in self.broadcastQList:
+                        if count != self.threadID:
+                            q.put(broadcast)
+                        count += 1
                 
     # This method will return any invalidated transactions
     def returnInvalidatedTX(self):
