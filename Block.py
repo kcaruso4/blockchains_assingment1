@@ -8,10 +8,6 @@ class Block:
         self.nonce = nonce
         self.pow = pow
         self.nextBlock = next
-        if next == None:
-            self.nextBlockHash = None
-        else:
-            self.nextBlockHash = H(self.next.toString()).hexdigest()
 
     def getTX(self):
         return self.transaction
@@ -26,12 +22,9 @@ class Block:
         return self.pow
 
     def getNext(self):
-        return self.next
-
-    def getNext(self):
         if self.nextBlock == None:
             return None
-        elif self.nextBlockHash == H(self.nextBlock.toString()).hexdigest():
+        elif self.prev == H(self.nextBlock.toString()).hexdigest():
             return self.nextBlock
         else:
             sys.stderr.write("Blockchain has been tampered with")
