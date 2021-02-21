@@ -139,7 +139,7 @@ nonce = HexEncoder.encode(b'Hello World!')
 
 
 # create the genesis block
-genesis = Block(firstTX, prev, nonce, pow)
+genesis = Block(firstTX, prev, nonce, pow, None)
 
 threadID = 0
 threads = []

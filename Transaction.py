@@ -29,6 +29,9 @@ class Transaction:
     def setSig(self, sig):
         self.sig = sig
 
+    def equals(self, tx):
+        return self.number == tx.number and self.sig == tx.sig and self.input == tx.input and self.output == tx.output
+
     def toString(self):
         data = {}
         data["number"] = self.number
