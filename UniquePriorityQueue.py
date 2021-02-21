@@ -17,3 +17,6 @@ class UniquePriorityQueue():
 
     def empty(self):
         return len(self.set) == 0
+
+    def length(self):
+        return len(self.set)

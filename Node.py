@@ -7,9 +7,6 @@ from hashlib import sha256 as H
 from Transaction import Transaction
 from nacl.signing import VerifyKey
 
-
-#STILL LOTS TO DO. INTEGRADE BROADCAST, POW, GENERATE BLOCK, FORK, DEBUG
-
 class Node:
     def __init__(self, genesisBlock) -> None:
         self.Blockchain = genesisBlock
