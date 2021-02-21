@@ -101,6 +101,9 @@ def fixPKOutput(output):
         ele['pubkey'] = HexEncoder.decode(ele['pubkey'])
     return output
 
+def fixSig(sig):
+    return HexEncoder.decode(sig)
+
 
 # BEGINING THE DRIVER         
 # get the number of nodes that will participate and the transaction file 
@@ -129,6 +132,7 @@ firstTX = txList[0]
 
 firstTX['input'] = fixPKInput(firstTX['input'])
 firstTX['output'] = fixPKOutput(firstTX['output'])
+firstTX['sig'] = fixSig(firstTX['sig'])
 
 firstTX = Transaction(firstTX['number'], firstTX['input'], firstTX['output'], firstTX['sig'])
 
@@ -164,6 +168,7 @@ for trans in txList:
     if trans != txList[0]:
         trans['input'] = fixPKInput(trans['input'])
         trans['output'] = fixPKOutput(trans['output'])
+        trans['sig'] = fixSig(trans['sig'])
         newTX = Transaction(trans['number'], trans['input'], trans['output'], trans['sig'])
         txQueue.add(newTX, txID)
     txID += 1
@@ -177,7 +182,6 @@ while not txQueue.empty():
         for broadq in broadcastQueue:
             if not broadq.empty():
                 empty += 1
-
 
 exitFlag = 1
 

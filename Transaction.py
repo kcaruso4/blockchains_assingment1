@@ -61,5 +61,5 @@ class Transaction:
             tempOutput.append(temp)
 
         data["output"] = list(tempOutput)
-        data["sig"] = self.sig.signature.hex()
+        data["sig"] = self.sig.hex()
         return data
