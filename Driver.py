@@ -18,23 +18,29 @@ from nacl.signing import VerifyKey
 exitFlag = 0
 
 # Create the priority queue which will hold all of the transactions  
-txQueue = UniquePriorityQueue()
+# txQueue = UniquePriorityQueue()
+txPool = {}
 broadcastLock = threading.Lock()
 broadcastQueue = []
 
 class nodeThread(threading.Thread):
-    def __init__(self, threadID, node, txQ, broadcastQ) -> None:
+    def __init__(self, threadID, node, txPool, broadcastQ) -> None:
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.node = node
-        self.txQ = txQ
+        # self.txQ = txQ
+        self.txPool = txPool
         self.broadcastQList = broadcastQ
+        self.indexSeen = 0
 
     
     # This method processing transactions
     def processTX(self):
-        if not self.txQ.empty():
-            tx = self.txQ.get()
+        if self.indexSeen in self.txPool:
+        # if not self.txQ.empty():
+            # tx = self.txQ.get()
+            tx = self.txPool[self.indexSeen]
+            self.indexSeen += 1
             # QUESTION: WHAT SHOULD YOU DO IF THE TX YOU PULLED
             # IS ALREADY IN THE BLOCKCHAIN? 
             # FOR NOW RETURN NULL IF PROCESSING FAILS
@@ -66,13 +72,13 @@ class nodeThread(threading.Thread):
                             q.put(broadcast)
                         count += 1
                 
-    # This method will return any invalidated transactions
-    def returnInvalidatedTX(self):
-        transactions = self.node.getInvalidatedTX()
-        count = 0
-        for tx in transactions:
-            self.txQ.add(tx, count)
-            count += 1
+    # # This method will return any invalidated transactions
+    # def returnInvalidatedTX(self):
+    #     transactions = self.node.getInvalidatedTX()
+    #     count = 0
+    #     for tx in transactions:
+    #         self.txQ.add(tx, count)
+    #         count += 1
 
     # This method will write to a new file the node's blockcahin
     def printBlockChain(self):
@@ -86,7 +92,7 @@ class nodeThread(threading.Thread):
         while not exitFlag:
             self.processTX()
             self.processBroadcast()
-            self.returnInvalidatedTX()
+            # self.returnInvalidatedTX()
         self.printBlockChain()
 
 
@@ -156,7 +162,8 @@ threadID = 0
 while threadID < numNodes:
     #place holder for actual node constructor
     node = Node(genesis)
-    thread = nodeThread(threadID, node, txQueue, broadcastQueue)
+    # thread = nodeThread(threadID, node, txQueue, broadcastQueue)
+    thread = nodeThread(threadID, node, txPool, broadcastQueue)
     thread.start()
     threads.append(thread)
     threadID += 1
@@ -170,18 +177,25 @@ for trans in txList:
         trans['output'] = fixPKOutput(trans['output'])
         trans['sig'] = fixSig(trans['sig'])
         newTX = Transaction(trans['number'], trans['input'], trans['output'], trans['sig'])
-        txQueue.add(newTX, txID)
+        # txQueue.add(newTX, txID)
+        txPool[txID] = newTX
     txID += 1
     time.sleep(random.random())
 
-# Check to see if the tx queue is empty and all the broadcast queues are empty
-while not txQueue.empty():
+# Check to see if the pool is no longer growing and all the broadcast queues are empty
+time.sleep(.5)
+prevLen = len(txPool)
+# while not txQueue.empty():
+while prevLen < len(txPool):
+    currLen = len(txPool)
+    time.sleep(.5)
     empty = numNodes
     while empty != 0:
         empty = 0
         for broadq in broadcastQueue:
             if not broadq.empty():
                 empty += 1
+    prevLen = currLen
 
 exitFlag = 1
 
