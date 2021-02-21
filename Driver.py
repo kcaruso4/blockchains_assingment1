@@ -1,15 +1,19 @@
+import binascii
 import threading
 import time
 import queue
 import sys
 import json
-import binascii
 import random
-import UniquePriorityQueue
-import Node
-import Block
-import Transaction
+from Node import Node
+from Block import Block
+from Transaction import Transaction
+from UniquePriorityQueue import UniquePriorityQueue
 from hashlib import sha256 as H
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 
 exitFlag = 0
 
@@ -49,22 +53,18 @@ class nodeThread(threading.Thread):
     # This method processes boradcasts
     def processBroadcast(self):
         if not self.broadcastQList[self.threadID].empty():
-            locked = broadcastLock.acquire(blocking=False)
-            # Check if the thread has the block
-            if locked:
-                while not self.broadcastQList[self.threadID].empty():
-                    broadcast = self.broadcastQList[self.threadID].get()
+            while not self.broadcastQList[self.threadID].empty():
+                broadcast = self.broadcastQList[self.threadID].get()
                 
-                    # Check if the block is valid
-                    valid = self.node.verify(broadcast)
-                    if valid is not None:
-                        count = 0
-                        # flood validated block to other queues
-                        for q in self.broadcastQList:
-                            if count != self.threadID:
-                                q.put(broadcast)
-                            count += 1
-            broadcastLock.release()
+                # Check if the block is valid
+                valid = self.node.verify(broadcast)
+                if valid is not None:
+                    count = 0
+                    # flood validated block to other queues
+                    for q in self.broadcastQList:
+                        if count != self.threadID:
+                            q.put(broadcast)
+                        count += 1
                 
     # This method will return any invalidated transactions
     def returnInvalidatedTX(self):
@@ -90,14 +90,26 @@ class nodeThread(threading.Thread):
         self.printBlockChain()
 
 
+def fixPKInput(input):
+    for ele in input:
+        out = ele['output']
+        out['pubkey'] = HexEncoder.decode(out['pubkey'])
+    return input
+
+def fixPKOutput(output):
+    for ele in output:
+        ele['pubkey'] = HexEncoder.decode(ele['pubkey'])
+    return output
+
+
 # BEGINING THE DRIVER         
 # get the number of nodes that will participate and the transaction file 
 numNodes = 8
 fileName = ""
-if len(sys.argv) == 4:
+if len(sys.argv) == 3:
     numNodes = sys.argv[1]
     fileName = sys.argv[2]
-elif len(sys.argv) == 3:
+elif len(sys.argv) == 2:
     fileName = sys.argv[1]
 else:
     sys.stderr.write("Improper number of arguments. Please provide the number of nodes (optional) and the transaction file.")
@@ -109,17 +121,21 @@ except ValueError:
 
 
 # Open the transaction file to read the first transaction
-txFile = open(fileName, 'r')
-txList = json.loads(txFile.read())
+with open(fileName) as jsonFile:
+    txList = json.load(jsonFile)
 
 # Get the first 
-tempTX = txList[0]
-firstTX = Transaction(tempTX['number'], tempTX['input'], tempTX['output'], tempTX['sig'])
+firstTX = txList[0]
+
+firstTX['input'] = fixPKInput(firstTX['input'])
+firstTX['output'] = fixPKOutput(firstTX['output'])
+
+firstTX = Transaction(firstTX['number'], firstTX['input'], firstTX['output'], firstTX['sig'])
 
 # Hash of arbitrary data for prev and nonce
 prev = H(b'Hello ').hexdigest()
 pow = H(b'World!').hexdigest()
-nonce = binascii.hexlify(b'Hello World!')
+nonce = HexEncoder.encode(b'Hello World!')
 
 
 # create the genesis block
@@ -127,6 +143,7 @@ genesis = Block(firstTX, prev, nonce, pow)
 
 threadID = 0
 threads = []
+# Create all of the broadcast queues
 while threadID < numNodes:
     broadcastQueue.append(queue.Queue())
     threadID += 1
@@ -144,12 +161,13 @@ while threadID < numNodes:
 txID = 0
 # Read in the transactions and populate the queue
 for trans in txList:
-    if trans != tempTX:
+    if trans != txList[0]:
+        trans['input'] = fixPKInput(trans['input'])
+        trans['output'] = fixPKOutput(trans['output'])
         newTX = Transaction(trans['number'], trans['input'], trans['output'], trans['sig'])
         txQueue.add(newTX, txID)
     txID += 1
     time.sleep(random.random())
-
 
 # Check to see if the tx queue is empty and all the broadcast queues are empty
 while not txQueue.empty():
