@@ -2,6 +2,7 @@ import Driver
 import UniquePriorityQueue
 import Block
 from hashlib import sha256 as H
+import threading
 
 
 #STILL LOTS TO DO. INTEGRADE BROADCAST, POW, GENERATE BLOCK, FORK, DEBUG
@@ -22,6 +23,17 @@ class Node:
         if not self.verifyTx(tx):
             return
 
+    def Forking(self):
+        thisThread = threading.enumerate().remove(threading.main_thread())
+        thisThread.sort(key=lambda x: len(x.Blockchain))
+        temp = thisThread[-1].Blockchain
+        if temp != self.Blockchain:
+            self.makeUnverified(self.Blockchain, temp)
+
+
+    #method to put back into unverified pool
+    def makeUnverified(self, b1, b2):
+        #TODO
 
     def verifyTx(self, tx):
         return txNotInChain(self, tx) and validTxStructure(self, tx)
