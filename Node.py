@@ -94,7 +94,7 @@ class Node:
 
     def POW(self, tx):
         nonce = 0
-        # while broadcastQueue
+        prev = H(json.dumps(self.Blockchain))
 
     
     def txInputIsValid(self, tx):
