@@ -200,7 +200,7 @@ class Node:
         
 
     def process(self, tx):
-        if self.Blockchain.empty():
+        if self.Blockchain == None:
             return
         # verify tx is not on the blockcahin
         if not self.txNotInChain(tx):
@@ -217,3 +217,28 @@ class Node:
 
         # return block
         return newBlock
+
+    def verify(self, broadcast):
+        #Verify the POW
+
+        #Verify prev hash
+        previousBlock = broadcast.getNext()
+        computedPrev = H(previousBlock.toString()).hexdigest()
+        if broadcast.getPrev() != computedPrev:
+            return None
+        # Verify the tx
+        tx = broadcast.getTX()
+        # verify tx is not on the blockcahin
+        if not self.txNotInChain(tx):
+            return None
+        
+        # verify that the tx is valid structure
+        if not self.validTxStructure(tx):
+            return None
+       
+       # add block to blockchain 
+    
+
+    def getBlockchain(self):
+        # return giant string of the blockchain
+        pass
