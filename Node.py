@@ -87,21 +87,34 @@ class Node:
         return inSum == outSum
 
 
-    def generateBlock(self, tx, nonce):
-        prev = H(json.dumps(self.Blockchain[-1])).hexdigest()
-
-        # genesis = Block(firstTX, prev, nonce, pow)
+    def generateBlock(self, tx):
+        prev = H(self.Blockchain.toString()).hexdigest()
+        return Block(tx, prev, None, None, self.Blockchain)
 
     def POW(self, tx):
         nonce = 0
         prev = H(json.dumps(self.Blockchain))
+
+    def doubleSpending(input1, input2):
+        mapInput1 = {}
+        #put all the number output pairs for input 1 into a map
+        for ele in input1:
+            mapInput1[ele['number']] = ele['output']
+
+        for ele in input2:
+            if ele['number'] in mapInput1:
+                if ele['output'] == mapInput1[ele['number']]:
+                    return True
+        return False
+        
 
     
     def txInputIsValid(self, tx):
         inputs = tx.getInputs()
         outputs = tx.getOutputs()
         mappedIns = {}
-        pkValsInputs = {}
+        inputCoinVals = 0
+        pk_encoded = None
 
         # create a map between the tx num and the output for the inputs
         for ele in inputs:
@@ -120,17 +133,22 @@ class Node:
         while currBlock != None:
             blockTx = currBlock.getTX()
 
+            #Check to see if the input of the tx of this block contains any inputs of 
+            # the tx that is being verified
+            if self.doubleSpending(blockTx.getInputs(), inputs):
+                return False
+
             # check to see if this tx output is the associated input value
             if blockTx.getNum() in mappedIns:
                 blockOutput = blockTx.getOutputs()
-                mappedOutputVal = mappedIns[blockTx.getNum()]
+                mappedOutput = mappedIns[blockTx.getNum()]
                 # check that the output in the input exists in named transaction
-                if not mappedOutputVal in blockOutput:
+                if not mappedOutput in blockOutput:
                     return False
                 # Because we found the associated tx we now remove it from the map
                 mappedIns.pop(blockTx.getNum())
-                # add pubkey value pair to a map that will be used to check input output values euqal in the tx
-                pkValsInputs[mappedOutputVal['pubkey']] = mappedOutputVal['value']
+                # add coin values to this list to check for equal input output values
+                inputCoinVals += mappedOutput['value']
 
             currBlock = currBlock.getNext()
         
@@ -142,26 +160,13 @@ class Node:
         pk = VerifyKey(pk_encoded, encoder=HexEncoder)
         pk.verify( tx.getSig() , encoder=HexEncoder)
 
-        # check for double spending
-
-
         # Verify the sum of the input output values are equal
         for ele in outputs:
-            pubKey = ele['pubkey']
-            # if the pubkey is in the map 
-            if pubKey in pkValsInputs:
-                # subtract the associated value
-                pkValsInputs[pubKey] -= ele['value']
-
-                #if new value is == 0, remove
-                if pkValsInputs[pubKey] == 0:
-                    pkValsInputs.pop(pubKey)
-                elif pkValsInputs[pubKey] < 0:
-                    # input output values don't match up for this pk
-                    return False
-            else:
-                # input output values for this pk don't match up
+            inputCoinVals -= ele['value']
+            if inputCoinVals < 0:
                 return False
+
+        return True
 
 
 
@@ -190,10 +195,9 @@ class Node:
         # Check the input is correct
         if not self.txInputIsValid(tx):
             return False
-        
-        
 
-
+        return True
+        
 
     def process(self, tx):
         if self.Blockchain.empty():
@@ -206,7 +210,10 @@ class Node:
         if not self.validTxStructure(tx):
             return None
 
-
         # create block
-        # create pow
+        newBlock = self.generateBlock(tx)
+
+        # create pow and add pow and nonce to newBlock
+
         # return block
+        return newBlock
