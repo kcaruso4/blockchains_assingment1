@@ -29,6 +29,12 @@ class Block:
         else:
             sys.stderr.write("Blockchain has been tampered with")
 
+    def setNonce(self, nonce):
+        self.nonce = nonce
+    
+    def setPow(self, pow):
+        self.pow = pow
+
     def toString(self):
         #May have to convert nonce to hex later
         data = {}
