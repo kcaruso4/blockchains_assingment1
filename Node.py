@@ -1,4 +1,5 @@
 import json
+from json import encoder
 from nacl import encoding
 
 from nacl.encoding import HexEncoder
@@ -84,27 +85,35 @@ class Node:
         return inSum == outSum
 
 
-    def generateBlock(self, tx, nonce):
+    def generateBlock(self, tx, nonce, pow):
         prev = H(self.Blockchain.toString()).hexdigest()
-        return Block(tx, prev, nonce, None, self.Blockchain)
+        return Block(tx, prev, nonce, pow, self.Blockchain)
+
+        
 
     def POW(self, tx):
         nonce = 0
         prev = H(self.Blockchain.toString()).hexdigest()
-        hashValue = H(json.dumps({
-            'tx': tx,
-            'prev': prev,
-            'nonce': H(bytes(nonce)).hexdigest()
-        })).hexdigest()
+    
+        # hashValue = H(json.dumps({
+        #     'tx': tx,
+        #     'prev': prev,
+        #     'nonce': H(bytes(nonce)).hexdigest()
+        # })).hexdigest()
+        hashValue = H((tx.toString() + str(prev) + str(nonce)).encode()).hexdigest()
         while int(hashValue, 16) > int(self.difficulty, 16):
             nonce += 1
-            prev = H(self.Blockchain.toString()).hexdigest()
-            hashValue = H(json.dumps({
-                'tx': tx,
-                'prev': prev,
-                'nonce': H(bytes(nonce)).hexdigest()
-            })).hexdigest()
-        return self.generateBlock(tx, nonce)
+            hashValue = H((tx.toString() + str(prev) + str(nonce)).encode()).hexdigest()
+            # prev = H(self.Blockchain.toString()).hexdigest()
+            # hashValue = H(json.dumps({
+            #     'tx': tx,
+            #     'prev': prev,
+            #     'nonce': H(bytes(nonce)).hexdigest()
+            # })).hexdigest()
+            
+        return self.generateBlock(tx, nonce, hashValue)
+
+
 
     def doubleSpending(input1, input2):
         mapInput1 = {}
@@ -220,12 +229,9 @@ class Node:
         # verify that the tx is valid structure
         if not self.validTxStructure(tx):
             return None
-
-        # create block
-        newBlock = self.generateBlock(tx)
-
-        # create pow and add pow and nonce to newBlock
-
+            
+        # find pow and nonce and create new block
+        newBlock = self.POW(tx)
         # return block
         return newBlock
 
