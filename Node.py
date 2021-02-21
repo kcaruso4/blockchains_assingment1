@@ -1,7 +1,11 @@
 import json
+from nacl import encoding
+
+from nacl.encoding import HexEncoder
 from Block import Block
 from hashlib import sha256 as H
 from Transaction import Transaction
+from nacl.signing import VerifyKey
 
 
 #STILL LOTS TO DO. INTEGRADE BROADCAST, POW, GENERATE BLOCK, FORK, DEBUG
@@ -11,6 +15,7 @@ class Node:
         self.Blockchain = genesisBlock
         self.forkMap = {}
         self.difficulty = '0x07FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        self.processed = {}
 
     def Forking(self):
         # thisThread = threading.enumerate().remove(threading.main_thread())
@@ -92,13 +97,78 @@ class Node:
         # while broadcastQueue
 
     
-    def txIsOnChain(self, tx):
+    def txInputIsValid(self, tx):
+        inputs = tx.getInputs()
+        outputs = tx.getOutputs()
+        mappedIns = {}
+        pkValsInputs = {}
+
+        # create a map between the tx num and the output for the inputs
+        for ele in inputs:
+            mappedIns[ele['number']] = ele['output']
+
+            # Check that all the public keys are the same
+            out = ele['output']
+            if pk_encoded == None:
+                pk_encoded = out['pubkey']
+            else:
+                if pk_encoded != out['pubkey']:
+                    return False
+
+        # Iterate through the blockcahin to find the txs from the input
+        currBlock = self.Blockchain
+        while currBlock != None:
+            blockTx = currBlock.getTX()
+
+            # check to see if this tx output is the associated input value
+            if blockTx.getNum() in mappedIns:
+                blockOutput = blockTx.getOutputs()
+                mappedOutputVal = mappedIns[blockTx.getNum()]
+                # check that the output in the input exists in named transaction
+                if not mappedOutputVal in blockOutput:
+                    return False
+                # Because we found the associated tx we now remove it from the map
+                mappedIns.pop(blockTx.getNum())
+                # add pubkey value pair to a map that will be used to check input output values euqal in the tx
+                pkValsInputs[mappedOutputVal['pubkey']] = mappedOutputVal['value']
+
+            currBlock = currBlock.getNext()
         
+        # if there are any elements left in the map then input is invalid
+        if len(mappedIns) != 0:
+            return False
+
+        # check that the pk can verify this transaction
+        pk = VerifyKey(pk_encoded, encoder=HexEncoder)
+        pk.verify( tx.getSig() , encoder=HexEncoder)
+
+        # check for double spending
+
+
+        # Verify the sum of the input output values are equal
+        for ele in outputs:
+            pubKey = ele['pubkey']
+            # if the pubkey is in the map 
+            if pubKey in pkValsInputs:
+                # subtract the associated value
+                pkValsInputs[pubKey] -= ele['value']
+
+                #if new value is == 0, remove
+                if pkValsInputs[pubKey] == 0:
+                    pkValsInputs.pop(pubKey)
+                elif pkValsInputs[pubKey] < 0:
+                    # input output values don't match up for this pk
+                    return False
+            else:
+                # input output values for this pk don't match up
+                return False
+
+
 
     def txNotInChain(self, tx):
         currBlock = self.Blockchain
         while currBlock != None and not tx.equals(currBlock.getTX()):
-            currBlock = self.getNext()
+            currBlock = currBlock.getNext()
         
         # case when tx is already in the chain
         if currBlock != None:
@@ -117,7 +187,9 @@ class Node:
         if not self.TxNumHashIsValid(tx):
             return False
         
-        # Check the input number is on chain
+        # Check the input is correct
+        if not self.txInputIsValid(tx):
+            return False
         
         
 
