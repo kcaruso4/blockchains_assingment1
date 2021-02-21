@@ -91,6 +91,10 @@ class Node:
         nonce = 0
         # while broadcastQueue
 
+    
+    def txIsOnChain(self, tx):
+        
+
     def txNotInChain(self, tx):
         currBlock = self.Blockchain
         while currBlock != None and not tx.equals(currBlock.getTX()):
@@ -113,7 +117,8 @@ class Node:
         if not self.TxNumHashIsValid(tx):
             return False
         
-        # Check the input is correct
+        # Check the input number is on chain
+        
         
 
 
