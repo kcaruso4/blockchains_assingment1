@@ -1,4 +1,3 @@
-import json
 from json import encoder
 from nacl import encoding
 
@@ -85,8 +84,7 @@ class Node:
         return inSum == outSum
 
 
-    def generateBlock(self, tx, nonce, pow):
-        prev = H(self.Blockchain.toString()).hexdigest()
+    def generateBlock(self, tx, prev, nonce, pow):
         return Block(tx, prev, nonce, pow, self.Blockchain)
 
         
@@ -111,7 +109,20 @@ class Node:
             #     'nonce': H(bytes(nonce)).hexdigest()
             # })).hexdigest()
             
-        return self.generateBlock(tx, nonce, hashValue)
+        return self.generateBlock(tx, prev, nonce, hashValue)
+
+    def verifyPOW(self, block):
+        prev = block.getPrev()
+        tx = block.getTX()
+        nonce = block.getNonce()
+        pow = block.getPow()
+        computedPow = H((tx.toString() + str(prev) + str(nonce)).encode()).hexdigest()
+        if pow != computedPow:
+            return False
+        elif int(computedPow, 16) > int(self.difficulty, 16):
+             return False
+        else:
+            return True
 
 
 
@@ -229,7 +240,7 @@ class Node:
         # verify that the tx is valid structure
         if not self.validTxStructure(tx):
             return None
-            
+
         # find pow and nonce and create new block
         newBlock = self.POW(tx)
         # return block
@@ -237,6 +248,8 @@ class Node:
 
     def verify(self, broadcast):
         #Verify the POW
+        if not self.verifyPOW(broadcast):
+            return None
 
         #Verify prev hash
         previousBlock = broadcast.getNext()
