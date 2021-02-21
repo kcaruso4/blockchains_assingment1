@@ -87,13 +87,27 @@ class Node:
         return inSum == outSum
 
 
-    def generateBlock(self, tx):
+    def generateBlock(self, tx, nonce):
         prev = H(self.Blockchain.toString()).hexdigest()
-        return Block(tx, prev, None, None, self.Blockchain)
+        return Block(tx, prev, nonce, None, self.Blockchain)
 
     def POW(self, tx):
         nonce = 0
-        prev = H(json.dumps(self.Blockchain))
+        prev = H(self.Blockchain.toString()).hexdigest()
+        hashValue = H(json.dumps({
+            'tx': tx,
+            'prev': prev,
+            'nonce': H(bytes(nonce)).hexdigest()
+        })).hexdigest()
+        while int(hashValue, 16) > int(self.difficulty, 16):
+            nonce += 1
+            prev = H(self.Blockchain.toString()).hexdigest()
+            hashValue = H(json.dumps({
+                'tx': tx,
+                'prev': prev,
+                'nonce': H(bytes(nonce)).hexdigest()
+            })).hexdigest()
+        return self.generateBlock(tx, nonce)
 
     def doubleSpending(input1, input2):
         mapInput1 = {}
