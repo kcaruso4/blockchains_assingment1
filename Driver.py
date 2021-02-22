@@ -196,7 +196,7 @@ for thread in threads:
     print(at)
     while thread.maxChainLen != txID:
         # print('size')
-        # print(thread.maxChainLen)
+        print(thread.maxChainLen)
         pass
     at += 1
 

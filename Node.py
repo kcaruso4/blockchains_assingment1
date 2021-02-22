@@ -239,6 +239,7 @@ class Node:
         # print('finsihed verifying trx)')
         # add block to blockchain 
         added = False
+        currLength = len(self.BlockchainForks[self.BlockchainHead])
         # check to see if the next block is the current or prev of the current longest chain
         if self.BlockchainHead == broadcast.getNext():
             self.addToChain(broadcast, self.BlockchainHead)
@@ -253,10 +254,13 @@ class Node:
                     list.append(broadcast)
                     self.BlockchainForks.pop(head)
                     self.BlockchainForks[broadcast] = list
-                    added = True
+
+                    # Only broadcast if this fork is now equal to or greater than our current longest chain
+                    if len(list) >= currLength:
+                        added = True
                     # if we are extending a different fork, do we need to change which list we build on
                     if head != self.BlockchainHead:
-                        if len(list) > len(self.BlockchainForks[self.BlockchainHead]):
+                        if len(list) > currLength:
                             self.BlockchainHead = broadcast
                             print('chain grew from fork')
                     break
@@ -267,58 +271,8 @@ class Node:
                     self.BlockchainForks[broadcast] = newList
                     print('fork but no growth')
                     break
+           
         if not added:
             return None
         else:
-            # print('added block')
-            # print('curr max chain len')
-            # print(len(self.BlockchainForks[self.BlockchainHead]))
             return len(self.BlockchainForks[self.BlockchainHead])
-
-
-
-    # def txInputs(self, tx):
-    #     inputs = tx.getInputs()
-    #     outputs = tx.getOutputs()
-    #     senderPubKey = inputs[0]['output']['pubkey']
-    #     flag1 = True
-    #     flag2 = True
-    #     flag3 = True
-    #     for i in inputs:
-    #         for x in self.Blockchain:
-    #             if not (x.getTX().getNum() == i['number'] and i['output'] in x.getTX().getOutputs()):
-    #                 flag1 = False
-    #         if i['output']['pk'] != inputs[0]['output']['pk']:
-    #             flag2 = False
-    #         if any(i in x.getTX().getInputs for x in self.Blockchain):
-    #             flag3 = False
-    #     return flag1 and flag2 and flag3
-
-
-    # def PublicKeySig(self, tx):
-    #     #TODO
-    #     pass
-
-
-    # def PubKeyRecent(self, tx):
-    #     inputs = tx.getInputs()
-    #     for i in inputs:
-    #         flag1 = True
-    #         for x in self.Blockchain:
-    #             if i in x.getTX().getInputs():
-    #                 flag1 = False
-    #                 return False
-    #     return flag1
-
-
-
-    # def InOutSum(self, tx):
-    #     inputs = tx.getInputs()
-    #     outputs = tx.getOutputs()
-    #     inSum = 0
-    #     outSum = 0
-    #     for i in inputs:
-    #         inSum += i.getOutput()['value']
-    #     for o in outputs:
-    #         outSum += o.getOutput()['value']
-    #     return inSum == outSum
