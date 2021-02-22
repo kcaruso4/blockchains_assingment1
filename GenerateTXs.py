@@ -233,24 +233,24 @@ data.append(genesis)
 dataString.append(genesis.toString())
 
 for i in range(numTx):
-    #For Testing Run
-    # if i % 3 == 0:
-        # createDoubleSpendingTX(data, listSkPkPairs, dataString)
+    # For Testing Run
+    if i % 3 == 0:
+        createDoubleSpendingTX(data, listSkPkPairs, dataString)
         # createTXWithMisingFields(data, listSkPkPairs, dataString)
         # createInvalidSigTX(data, listSkPkPairs, dataString)
         # dataString = createInputDNETX(data, listSkPkPairs, dataString)
-        # createInvalidInputOutputValueTX(data, listSkPkPairs, dataString)
-        # createInvalidNumTX(data, listSkPkPairs, dataString)
-    #     pass
-    # else:
-    #     tx = createValidTX(data, listSkPkPairs)
-    #     dataString.append(tx.toString())
-    #     data.append(tx)
+        createInvalidInputOutputValueTX(data, listSkPkPairs, dataString)
+        createInvalidNumTX(data, listSkPkPairs, dataString)
+        pass
+    else:
+        tx = createValidTX(data, listSkPkPairs)
+        dataString.append(tx.toString())
+        data.append(tx)
     
     #Normal Run
-    tx = createValidTX(data, listSkPkPairs)
-    dataString.append(tx.toString())
-    data.append(tx)
+    # tx = createValidTX(data, listSkPkPairs)
+    # dataString.append(tx.toString())
+    # data.append(tx)
 
 
 with open('transaction_file.json', 'w') as outfile:

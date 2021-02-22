@@ -159,12 +159,10 @@ class Node:
     def validTxStructure(self, tx, isBroadcast, broadcastBlock):
         # Check that the number is valid
         if not self.TxNumHashIsValid(tx):
-            print("number has isn't correct")
             return False
         
         # Check the input is correct
         if not self.txInputIsValid(tx, isBroadcast, broadcastBlock):
-            print("not valid input")
             return False
 
         return True
@@ -192,12 +190,10 @@ class Node:
             return None
         # verify tx is not on the blockcahin
         if not self.txNotInChain(tx, False, None):
-            # print('in chain')
             return None
         
         # verify that the tx is valid structure
         if not self.validTxStructure(tx, False, None):
-            print("not valid struct")
             return None
 
         # find pow and nonce and create new block
@@ -234,7 +230,6 @@ class Node:
         
         # verify that the tx is valid structure
         if not self.validTxStructure(tx, True, broadcast):
-            print('invalid tx struct')
             return None
         # add block to blockchain 
         added = False
