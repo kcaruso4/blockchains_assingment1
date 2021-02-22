@@ -26,7 +26,7 @@ class Node:
         return listStr
 
     def generateBlock(self, tx, prev, nonce, pow):
-        print('creating block')
+        # print('creating block')
         block = Block(tx, prev, nonce, pow, self.BlockchainHead)
         return block
 
@@ -90,7 +90,10 @@ class Node:
 
         # create a map between the tx num and the output for the inputs
         for ele in inputs:
-            mappedIns[ele['number']] = ele['output']
+            if ele['number'] in mappedIns:
+                mappedIns[ele['number']].append(ele['output'])
+            else:
+                mappedIns[ele['number']] = [ele['output']]
 
             # Check that all the public keys are the same
             out = ele['output']
@@ -123,14 +126,18 @@ class Node:
             # check to see if this tx output is the associated input value
             if blockTx.getNum() in mappedIns:
                 blockOutput = blockTx.getOutputs()
-                mappedOutput = mappedIns[blockTx.getNum()]
-                # check that the output in the input exists in named transaction
-                if not mappedOutput in blockOutput:
-                    return False
+                mappedOutputs = mappedIns[blockTx.getNum()]
+                # check that the outputs in the input exists in named transaction
+                for out in mappedOutputs:
+                    if not out in blockOutput:
+                        return False
+                    else:
+                        # add coin values to this list to check for equal input output values
+                        inputCoinVals += out['value']
                 # Because we found the associated tx we now remove it from the map
                 mappedIns.pop(blockTx.getNum())
-                # add coin values to this list to check for equal input output values
-                inputCoinVals += mappedOutput['value']
+                
+                # inputCoinVals += mappedOutputs['value']
 
             currBlock = currBlock.getNext()
         

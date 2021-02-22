@@ -37,16 +37,6 @@ class Transaction:
         data["number"] = self.number
         tempInput = []
         for ele in self.input:
-            # if (type(ele) == list):
-            #     num = ele[0]
-            #     output = ele[1]
-            #     val = output[0]
-            #     pk = output[1]
-            # else:
-                # num = ele['number']
-                # output = ele['output']
-                # val = output['value']
-                # pk = output['pubkey']
             num = ele['number']
             output = ele['output']
             val = output['value']
@@ -55,12 +45,9 @@ class Transaction:
             temp["number"] = num
             outputDict = {}
             outputDict["value"] = val
-            # if (type(pk) == hex):
-            #     outputDict["pubkey"] = pk
             if (type(pk) == bytes):
                 outputDict["pubkey"] = pk.hex()
             else:
-                # outputDict["pubkey"] = pk.encode()
                 outputDict["pubkey"] = pk
             temp["output"] = outputDict
             tempInput.append(temp)
@@ -68,22 +55,13 @@ class Transaction:
 
         tempOutput = []
         for ele in self.output:
-            # if type(ele) == list:
-            #     val = ele[0]
-            #     pk = ele[1]
-            # else:
-            #     val = ele['value']
-            #     pk = ele['pubkey']
             val = ele['value']
             pk = ele['pubkey']
             temp = {}
             temp["value"] = val
-            # if (type(pk) == hex):
-            #     temp["pubkey"] = pk
             if (type(pk) == bytes):
                 temp["pubkey"] = pk.hex()
             else:
-                # temp["pubkey"] = pk.encode()
                 temp["pubkey"] = pk
             tempOutput.append(temp)
 

@@ -105,7 +105,6 @@ def createDoubleSpendingTX(data, listKeys, dataString):
         testOut = {}
         testOut['value'] = ele['value']
         testOut['pubkey'] = toPkEncoded
-        # newOutputs.append(np.array([val, toPkEncoded]))
         newOutputs.append(testOut)
     
     newSignature = origSk.sign((str(inputs) + str(newOutputs)).encode(), encoder=HexEncoder)
@@ -142,7 +141,6 @@ def createValidTX(data, listKeys):
         if pk == fromPkEncoded:
             fromSK = sk
     
-    # WILL LATER IMPLEMENT ABITLIY TO GET OUTPUT FROM MUTLIPLE PREV TX
     # get all possible coins from this tx that the person can spend
     prevTxNum = prevtx.getNum()
     val = 0
@@ -162,7 +160,6 @@ def createValidTX(data, listKeys):
             tempOutput['pubkey'] = pkEncoded
             tempDict['output'] = tempOutput
             inputs.append(tempDict)
-            # inputs.append([prevTxNum, [txVal, pkEncoded]])
 
     #Randomly create output for this transaction
     newOutput = []
@@ -197,7 +194,6 @@ def createValidTX(data, listKeys):
         newOutput.append(tempOutput)
 
     txSig = fromSK.sign( (str(inputs) + str(newOutput)).encode() , encoder=HexEncoder)
-    # txNumber = H((str(inputs) + str(newOutput) + str(txSig.signature)).encode()).hexdigest()
     txNumber = H((str(inputs) + str(newOutput) + str(txSig)).encode()).hexdigest()
     return Transaction(txNumber, inputs, newOutput, txSig)
 
@@ -233,7 +229,6 @@ for sk, pk in listSkPkPairs:
 
 sk0, pkEncoded0 = listSkPkPairs[0]
 firstSig = sk0.sign((str(firstInput) + str(firstOutput)).encode(), encoder=HexEncoder)
-# firstNum = H((str(firstInput) + str(firstOutput) + str(firstSig.signature)).encode()).hexdigest()
 firstNum = H((str(firstInput) + str(firstOutput) + str(firstSig)).encode()).hexdigest()
 
 # Create the genesis transaction
@@ -242,18 +237,23 @@ data.append(genesis)
 dataString.append(genesis.toString())
 
 for i in range(numTx):
-    if i % 3 == 0:
+    # if i % 3 == 0:
         # createDoubleSpendingTX(data, listSkPkPairs, dataString)
         # createTXWithMisingFields(data, listSkPkPairs, dataString)
         # createInvalidSigTX(data, listSkPkPairs, dataString)
         # dataString = createInputDNETX(data, listSkPkPairs, dataString)
         # createInvalidInputOutputValueTX(data, listSkPkPairs, dataString)
         # createInvalidNumTX(data, listSkPkPairs, dataString)
-        pass
-    else:
-        tx = createValidTX(data, listSkPkPairs)
-        dataString.append(tx.toString())
-        data.append(tx)
+    #     pass
+    # else:
+    #     tx = createValidTX(data, listSkPkPairs)
+    #     dataString.append(tx.toString())
+    #     data.append(tx)
+    
+    #Normal Run
+    tx = createValidTX(data, listSkPkPairs)
+    dataString.append(tx.toString())
+    data.append(tx)
 
 
 with open('transaction_file.json', 'w') as outfile:
