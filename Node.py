@@ -9,107 +9,24 @@ from nacl.signing import VerifyKey
 
 class Node:
     def __init__(self, genesisBlock) -> None:
-        self.Blockchain = genesisBlock
-        self.forkMap = {}
+        self.BlockchainHead = genesisBlock
+        # create a map to manage forks
+        self.BlockchainForks = {}
+        self.BlockchainForks[self.BlockchainHead] = [self.BlockchainHead]
         self.difficulty = '0x07FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-        self.processed = {}
 
-    def Forking(self):
-        # thisThread = threading.enumerate().remove(threading.main_thread())
-        # thisThread.sort(key=lambda x: len(x.Blockchain))
-        # temp = thisThread[-1].Blockchain
-        # if temp != self.Blockchain:
-        #     self.makeUnverified(self.Blockchain, temp)
-        pass
+    def printBlockchain(self, block):
+        if block.getNext() == None:
+            return block.toString()
+        else:
+            return self.printBlockchain(block.getNext()) + block.toString()
 
-
-    #method to put back into unverified pool
-    def makeUnverified(self, b1, b2):
-        #TODO
-        pass
-
-
-
-    def TxNumHashIsValid(self, tx):
-        txNumber = H((str(tx.getInputs()) + str(tx.getOutputs()) + str(tx.getSig().signature)).encode()).hexdigest()
-        if txNumber != tx.getNum():
-            return False
-        return True
-
-
-    def txInputs(self, tx):
-        inputs = tx.getInputs()
-        outputs = tx.getOutputs()
-        senderPubKey = inputs[0]['output']['pubkey']
-        flag1 = True
-        flag2 = True
-        flag3 = True
-        for i in inputs:
-            for x in self.Blockchain:
-                if not (x.getTX().getNum() == i['number'] and i['output'] in x.getTX().getOutputs()):
-                    flag1 = False
-            if i['output']['pk'] != inputs[0]['output']['pk']:
-                flag2 = False
-            if any(i in x.getTX().getInputs for x in self.Blockchain):
-                flag3 = False
-        return flag1 and flag2 and flag3
-
-
-    def PublicKeySig(self, tx):
-        #TODO
-        pass
-
-
-    def PubKeyRecent(self, tx):
-        inputs = tx.getInputs()
-        for i in inputs:
-            flag1 = True
-            for x in self.Blockchain:
-                if i in x.getTX().getInputs():
-                    flag1 = False
-                    return False
-        return flag1
-
-
-
-    def InOutSum(self, tx):
-        inputs = tx.getInputs()
-        outputs = tx.getOutputs()
-        inSum = 0
-        outSum = 0
-        for i in inputs:
-            inSum += i.getOutput()['value']
-        for o in outputs:
-            outSum += o.getOutput()['value']
-        return inSum == outSum
-
+    def getBlockchain(self):
+        # recursive calls to a helper function
+        return self.printBlockchain(self.BlockchainHead)
 
     def generateBlock(self, tx, prev, nonce, pow):
-        return Block(tx, prev, nonce, pow, self.Blockchain)
-
-        
-
-    def POW(self, tx):
-        nonce = 0
-        prev = H(self.Blockchain.toString()).hexdigest()
-    
-        # hashValue = H(json.dumps({
-        #     'tx': tx,
-        #     'prev': prev,
-        #     'nonce': H(bytes(nonce)).hexdigest()
-        # })).hexdigest()
-        hashValue = H((tx.toString() + str(prev) + str(nonce)).encode()).hexdigest()
-        while int(hashValue, 16) > int(self.difficulty, 16):
-            nonce += 1
-            hashValue = H((tx.toString() + str(prev) + str(nonce)).encode()).hexdigest()
-            # prev = H(self.Blockchain.toString()).hexdigest()
-            # hashValue = H(json.dumps({
-            #     'tx': tx,
-            #     'prev': prev,
-            #     'nonce': H(bytes(nonce)).hexdigest()
-            # })).hexdigest()
-            
-        return self.generateBlock(tx, prev, nonce, hashValue)
+        return Block(tx, prev, nonce, pow, self.BlockchainHead)
 
     def verifyPOW(self, block):
         prev = block.getPrev()
@@ -124,7 +41,22 @@ class Node:
         else:
             return True
 
+    def POW(self, tx):
+        nonce = 0
+        prev = H(self.BlockchainHead.toString()).hexdigest()
+        hashValue = H((tx.toString() + str(prev) + str(nonce)).encode()).hexdigest()
+        while int(hashValue, 16) > int(self.difficulty, 16):
+            nonce += 1
+            hashValue = H((tx.toString() + str(prev) + str(nonce)).encode()).hexdigest()
+        return self.generateBlock(tx, prev, nonce, hashValue)
+    
 
+    def addToChain(self, newBlock, oldBlock):
+        list = self.BlockchainForks[oldBlock]
+        list.append(newBlock)
+        self.BlockchainForks.pop(oldBlock)
+        self.BlockchainForks[newBlock] = list
+        return
 
     def doubleSpending(input1, input2):
         mapInput1 = {}
@@ -137,10 +69,8 @@ class Node:
                 if ele['output'] == mapInput1[ele['number']]:
                     return True
         return False
-        
 
-    
-    def txInputIsValid(self, tx):
+    def txInputIsValid(self, tx, isBroadcast, broadcastBlock):
         inputs = tx.getInputs()
         outputs = tx.getOutputs()
         mappedIns = {}
@@ -160,7 +90,10 @@ class Node:
                     return False
 
         # Iterate through the blockcahin to find the txs from the input
-        currBlock = self.Blockchain
+        if isBroadcast:
+            currBlock = broadcastBlock.getNext()
+        else:
+            currBlock = self.BlockchainHead
         while currBlock != None:
             blockTx = currBlock.getTX()
 
@@ -199,10 +132,28 @@ class Node:
 
         return True
 
+    def TxNumHashIsValid(self, tx):
+        txNumber = H((str(tx.getInputs()) + str(tx.getOutputs()) + str(tx.getSig().signature)).encode()).hexdigest()
+        if txNumber != tx.getNum():
+            return False
+        return True
 
+    def validTxStructure(self, tx, isBroadcast, broadcastBlock):
+        # Check that the number is valid
+        if not self.TxNumHashIsValid(tx):
+            return False
+        
+        # Check the input is correct
+        if not self.txInputIsValid(tx, isBroadcast, broadcastBlock):
+            return False
 
-    def txNotInChain(self, tx):
-        currBlock = self.Blockchain
+        return True
+
+    def txNotInChain(self, tx, isBroadcast, broadcastBlock):
+        if not isBroadcast:
+            currBlock = self.BlockchainHead
+        else:
+            currBlock = broadcastBlock.getNext()
         while currBlock != None and not tx.equals(currBlock.getTX()):
             currBlock = currBlock.getNext()
         
@@ -211,40 +162,29 @@ class Node:
             return False
 
         return True
-        
 
-
-    def validTxStructure(self, tx):
-        # flag = TxNumHash(self, tx) and TxInputs(self, tx) and \
-        #        PubKeySig(self, tx) and PubKeyRecent(self, tx) and InOutSum(self, tx)
-        # return flag
-
-        # Check that the number is valid
-        if not self.TxNumHashIsValid(tx):
-            return False
-        
-        # Check the input is correct
-        if not self.txInputIsValid(tx):
-            return False
-
-        return True
-        
 
     def process(self, tx):
-        if self.Blockchain == None:
+        if self.BlockchainHead == None:
             return
         # verify tx is not on the blockcahin
-        if not self.txNotInChain(tx):
+        if not self.txNotInChain(tx, False, None):
             return None
         
         # verify that the tx is valid structure
-        if not self.validTxStructure(tx):
+        if not self.validTxStructure(tx, False, None):
             return None
 
         # find pow and nonce and create new block
         newBlock = self.POW(tx)
+
+        # add this block to our currently longest chain
+        # get list associated with this head
+        self.addToChain(newBlock, self.BlockchainHead)
+
         # return block
         return newBlock
+
 
     def verify(self, broadcast):
         #Verify the POW
@@ -256,19 +196,93 @@ class Node:
         computedPrev = H(previousBlock.toString()).hexdigest()
         if broadcast.getPrev() != computedPrev:
             return None
+
         # Verify the tx
         tx = broadcast.getTX()
         # verify tx is not on the blockcahin
-        if not self.txNotInChain(tx):
+        if not self.txNotInChain(tx, True, broadcast):
             return None
         
         # verify that the tx is valid structure
-        if not self.validTxStructure(tx):
+        if not self.validTxStructure(tx, True, broadcast):
             return None
        
-       # add block to blockchain 
-    
+        # add block to blockchain 
+        added = False
+        # check to see if the next block is the current or prev of the current longest chain
+        if self.BlockchainHead == broadcast.getNext():
+            self.addToChain(broadcast, self.BlockchainHead)
+            added = True
+        else:
+            # need to go through all the chains to find the fork this block is added to
+            nextBlock = broadcast.getNext()
+            for head, list in self.BlockchainForks.items():
+                if head == nextBlock:
+                    list.append(broadcast)
+                    self.BlockchainForks.pop(head)
+                    self.BlockchainForks[broadcast] = list
+                    added = True
+                    # if we are extending a different fork, do we need to change which list we build on
+                    if head != self.BlockchainHead:
+                        if len(list) > len(self.BlockchainForks[self.BlockchainHead]):
+                            self.BlockchainHead = broadcast
+                    break
+                elif head.getNext() == nextBlock:
+                    # create another fork and add it 
+                    newList = list.copy()
+                    newList[-1] = broadcast
+                    self.BlockchainForks[broadcast] = newList
+                    added = True
+                    break
+        if not added:
+            return None
+        else:
+            return True
 
-    def getBlockchain(self):
-        # return giant string of the blockchain
-        pass
+
+
+    # def txInputs(self, tx):
+    #     inputs = tx.getInputs()
+    #     outputs = tx.getOutputs()
+    #     senderPubKey = inputs[0]['output']['pubkey']
+    #     flag1 = True
+    #     flag2 = True
+    #     flag3 = True
+    #     for i in inputs:
+    #         for x in self.Blockchain:
+    #             if not (x.getTX().getNum() == i['number'] and i['output'] in x.getTX().getOutputs()):
+    #                 flag1 = False
+    #         if i['output']['pk'] != inputs[0]['output']['pk']:
+    #             flag2 = False
+    #         if any(i in x.getTX().getInputs for x in self.Blockchain):
+    #             flag3 = False
+    #     return flag1 and flag2 and flag3
+
+
+    # def PublicKeySig(self, tx):
+    #     #TODO
+    #     pass
+
+
+    # def PubKeyRecent(self, tx):
+    #     inputs = tx.getInputs()
+    #     for i in inputs:
+    #         flag1 = True
+    #         for x in self.Blockchain:
+    #             if i in x.getTX().getInputs():
+    #                 flag1 = False
+    #                 return False
+    #     return flag1
+
+
+
+    # def InOutSum(self, tx):
+    #     inputs = tx.getInputs()
+    #     outputs = tx.getOutputs()
+    #     inSum = 0
+    #     outSum = 0
+    #     for i in inputs:
+    #         inSum += i.getOutput()['value']
+    #     for o in outputs:
+    #         outSum += o.getOutput()['value']
+    #     return inSum == outSum
