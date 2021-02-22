@@ -12,95 +12,109 @@ from Transaction import Transaction
 
 
 
-# def createInvalidNumTX(data, listKeys):
-#     transaction = createValidTX(data, listKeys)
-#     newNum = H(np.array(transaction.getInputs()).tobytes() + np.array(transaction.getOutputs()).tobytes() + transaction.getSig()).hexdigest()
-#     transaction.setNum(newNum)
-#     data.append(transaction)
+def createInvalidNumTX(data, listKeys, dataString):
+    transaction = createValidTX(data, listKeys)
+    newNum = H((str("hi") + str("world") + str(transaction.getSig())).encode()).hexdigest()
+    transaction.setNum(newNum)
+    data.append(transaction)
+    dataString.append(transaction.toString())
 
 
-# def createInvalidInputOutputValueTX(data, listKeys):
-#     transaction = createValidTX(data, listKeys)
-#     outputs = np.array(transaction.getOutputs())
-#     while len(outputs) == 1:
-#         transaction = createValidTX(data, listKeys)
-#         outputs = np.array(transaction.getOutputs())
+def createInvalidInputOutputValueTX(data, listKeys, dataString):
+    transaction = createValidTX(data, listKeys)
+    outputs = transaction.getOutputs()
+    while len(outputs) == 1:
+        transaction = createValidTX(data, listKeys)
+        outputs = transaction.getOutputs()
 
-#     inputs = np.array(transaction.getInputs())
-#     sig = transaction.getSig()
-#     fromPerson = 1
-#     #figure out who signed this:
-#     for sk, pkEncoded in listKeys:
-#         if (sig == sk.sign(inputs.tobytes() + outputs.tobytes(), encoder=HexEncoder)):
-#             fromPersonSk = (sk, pkEncoded)
+    inputs = transaction.getInputs()
+    sig = transaction.getSig()
+    fromPerson = 1
+    #figure out who signed this:
+    for sk, pkEncoded in listKeys:
+        if (sig == sk.sign((str(inputs) + str(outputs)).encode(), encoder=HexEncoder)):
+            origSK = sk
+            fromPerson = 2
 
-#     if fromPersonSk == 1:
-#         sys.stderr.write("unable to find who signed the transaction")
+    if fromPerson == 1:
+        sys.stderr.write("unable to find who signed the transaction")
 
-#     origSK, origPk = fromPerson
-#     #get ride of the first output value so input and output values do not match
-#     outputs.pop(0)
-#     sig = origSK.sign(inputs.tobytes() + outputs.tobytes(), encoder=HexEncoder)
-#     num = H(inputs.tobytes() + outputs.tobytes()+ sig).hexdigest()
-#     transaction.setOutputs(outputs)
-#     transaction.setSig(sig)
-#     transaction.setNum(num)
-#     data.append(transaction)
+    #get ride of the first output value so input and output values do not match
+    if len(outputs) > 0:
+        outputs.pop(0)
+    else:
+        createInvalidInputOutputValueTX(data, listKeys, dataString)
+        return
+    sig = origSK.sign((str(inputs) + str(outputs)).encode(), encoder=HexEncoder)
+    num = H((str(inputs) + str(outputs) + str(sig)).encode()).hexdigest()
+    transaction.setOutputs(outputs)
+    transaction.setSig(sig)
+    transaction.setNum(num)
+    data.append(transaction)
+    dataString.append(transaction.toString())
     
 
 
-# def createInputDNETX(data, listKeys):
-#     #There is a chance with this test that the input of the created tx is from the genesis
-#     #block so we print the transaction and genesis block here to ensure this is not the case
-#     transaction = createValidTX(data, listKeys)
-#     newData = []
-#     newData.append(data[0])
-#     newData.append(transaction)
-#     data = newData
+def createInputDNETX(data, listKeys, dataString):
+    #There is a chance with this test that the input of the created tx is from the genesis
+    #block so we print the transaction and genesis block here to ensure this is not the case
+    transaction = createValidTX(data, listKeys)
+    newData = [transaction]
+    data = newData
+    dataString = [transaction.toString()]
+    return dataString
 
-# def createInvalidSigTX(data, listKeys):
-#     transaction = createValidTX(data, listKeys)
-#     inputs = transaction.getInputs()
-#     outputs = transaction.getOutputs()
-#     randomSk, randomPk = listKeys[random.randint(0, len(listKeys))]
-#     newsig = randomSk.sign(np.array(inputs).tobytes() + np.array(outputs).tobytes(), encoder=HexEncoder)
-#     newNumber = H(inputs + outputs + newsig).hexdigest()
-#     newTransaction = Transaction(newNumber, inputs, outputs, newsig)
-#     data.append(newTransaction)
+def createInvalidSigTX(data, listKeys, dataString):
+    transaction = createValidTX(data, listKeys)
+    inputs = transaction.getInputs()
+    outputs = transaction.getOutputs()
+    randomSk, randomPk = listKeys[random.randint(0, len(listKeys) - 1)]
+    newsig = randomSk.sign((str(inputs) + str(outputs)).encode(), encoder=HexEncoder)
+    newNumber = H((str(inputs )+ str(outputs) + str(newsig)).encode()).hexdigest()
+    newTransaction = Transaction(newNumber, inputs, outputs, newsig)
+    data.append(newTransaction)
+    dataString.append(newTransaction.toString())
     
 
-# def createTXWithMisingFields(data, listKeys):
-#     transaction = createValidTX(data, listKeys)
-#     transaction.setInputs([])
-#     data.append(transaction)
+def createTXWithMisingFields(data, listKeys, dataString):
+    transaction = createValidTX(data, listKeys)
+    transaction.setInputs([])
+    data.append(transaction)
+    dataString.append(transaction.toString())
 
-# def createDoubleSpendingTX(data, listKeys):
-#     transaction = createValidTX(data, listKeys)
-#     inputs = np.array(transaction.getInputs())
-#     outputs = np.array(transaction.getOutputs())
-#     sig = transaction.getSig()
-#     fromPerson = 1
-#     #figure out who signed this:
-#     for sk, pkEncoded in listKeys:
-#         if (sig == sk.sign(inputs.tobytes() + outputs.tobytes(), encoder=HexEncoder)):
-#             fromPersonSk = (sk, pkEncoded)
+def createDoubleSpendingTX(data, listKeys, dataString):
+    transaction = createValidTX(data, listKeys)
+    inputs = transaction.getInputs()
+    outputs = transaction.getOutputs()
+    sig = transaction.getSig()
+    fromPerson = 1
+    #figure out who signed this:
+    for sk, pkEncoded in listKeys:
+        if (sig == sk.sign((str(inputs) + str(outputs)).encode(), encoder=HexEncoder)):
+            origSk = sk
+            fromPerson = 2
 
-#     if fromPersonSk == 1:
-#         sys.stderr.write("unable to find who signed the transaction")
+    if fromPerson == 1:
+        sys.stderr.write("unable to find who signed the transaction")
     
-#     # Changing who recieves these values
-#     newOutputs = []
-#     for val, pkEncoded in outputs:
-#         #randomly select a person to give the value 
-#         toSK, toPkEncoded = listKeys[random.randint(0, len(listKeys))]
-#         newOutputs.append(np.array([val, toPkEncoded]))
+    # Changing who recieves these values
+    newOutputs = []
+    for ele in outputs:
+        #randomly select a person to give the value 
+        toSK, toPkEncoded = listKeys[random.randint(0, len(listKeys) - 1)]
+        testOut = {}
+        testOut['value'] = ele['value']
+        testOut['pubkey'] = toPkEncoded
+        # newOutputs.append(np.array([val, toPkEncoded]))
+        newOutputs.append(testOut)
     
-#     origSk, origPK = fromPerson
-#     newSignature = origSk.sign(inputs.tobytes() + np.array(newOutputs).tobytes(), encoder=HexEncoder)
-#     newTransactionNumber = H(inputs.tobytes() + np.array(newOutputs).tobytes() + newSignature).hexdigest()
-#     doubleTransaction = Transaction(newTransactionNumber, inputs, newOutputs, newSignature)
-#     data.append(transaction)
-#     data.append(doubleTransaction)
+    newSignature = origSk.sign((str(inputs) + str(newOutputs)).encode(), encoder=HexEncoder)
+    newTransactionNumber = H((str(inputs) + str(newOutputs) + str(newSignature)).encode()).hexdigest()
+    doubleTransaction = Transaction(newTransactionNumber, inputs, newOutputs, newSignature)
+    data.append(transaction)
+    dataString.append(transaction.toString())
+    data.append(doubleTransaction)
+    dataString.append(doubleTransaction.toString())
 
 pplSpentInTransaction = set([])
 
@@ -122,19 +136,6 @@ def createValidTX(data, listKeys):
     pplSpentInTransaction.add((prevtx, fromPkEncoded))
     if lenBefore == len(pplSpentInTransaction):
         return createValidTX(data, listKeys)
-    # if fromPkEncoded in pplSpentInTransaction:
-    #     usedTxs = pplSpentInTransaction[fromPkEncoded]
-    #     if prevtx in usedTxs:
-    #         return createValidTX(data, listKeys)
-    #     else:
-    #         if fromPkEncoded in pplSpentInTransaction:
-    #             list = pplSpentInTransaction[fromPkEncoded]
-    #             list.append(prevtx)
-    #             pplSpentInTransaction[fromPkEncoded] = list
-    #         else:
-    #             pplSpentInTransaction[fromPkEncoded] = [prevtx]
-    # else:
-    #     pplSpentInTransaction[fromPkEncoded] = [prevtx]
     
     fromSK = None
     for sk, pk in listKeys:
@@ -241,9 +242,18 @@ data.append(genesis)
 dataString.append(genesis.toString())
 
 for i in range(numTx):
-    tx = createValidTX(data, listSkPkPairs)
-    dataString.append(tx.toString())
-    data.append(tx)
+    if i % 3 == 0:
+        # createDoubleSpendingTX(data, listSkPkPairs, dataString)
+        # createTXWithMisingFields(data, listSkPkPairs, dataString)
+        # createInvalidSigTX(data, listSkPkPairs, dataString)
+        # dataString = createInputDNETX(data, listSkPkPairs, dataString)
+        # createInvalidInputOutputValueTX(data, listSkPkPairs, dataString)
+        # createInvalidNumTX(data, listSkPkPairs, dataString)
+        pass
+    else:
+        tx = createValidTX(data, listSkPkPairs)
+        dataString.append(tx.toString())
+        data.append(tx)
 
 
 with open('transaction_file.json', 'w') as outfile:

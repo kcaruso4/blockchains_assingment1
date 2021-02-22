@@ -16,7 +16,19 @@ class Transaction:
 
     def getSig(self):
         return self.sig
+
+    def setInputs(self, input):
+        self.input = input
+
+    def setOutputs(self, out):
+        self.output = out 
     
+    def setSig(self, sig):
+        self.sig = sig 
+    
+    def setNum(self, num):
+        self.number = num
+
     def equals(self, tx):
         return self.number == tx.number and self.sig == tx.sig and self.input == tx.input and self.output == tx.output
 

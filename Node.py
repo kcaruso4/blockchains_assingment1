@@ -35,6 +35,8 @@ class Node:
         tx = block.getTX()
         nonce = block.getNonce()
         pow = block.getPow()
+        if prev == None or tx == None or nonce == None or pow == None:
+            return False
         txString = json.dumps(tx.toString())
         computedPow = H((txString + str(prev) + str(nonce)).encode()).hexdigest()
         if pow != computedPow:
@@ -65,6 +67,7 @@ class Node:
         return
 
     def doubleSpending(self, input1, input2):
+        # print('looking at double spending')
         mapInput1 = {}
         #put all the number output pairs for input 1 into a map
         for ele in input1:
@@ -79,6 +82,8 @@ class Node:
     def txInputIsValid(self, tx, isBroadcast, broadcastBlock):
         inputs = tx.getInputs()
         outputs = tx.getOutputs()
+        if inputs == None or outputs == None:
+            return False
         mappedIns = {}
         inputCoinVals = 0
         pk_encoded = None
@@ -93,23 +98,26 @@ class Node:
                 pk_encoded = out['pubkey']
             else:
                 if pk_encoded != out['pubkey']:
-                    print(out['pubkey'])
-                    print(pk_encoded)
-                    print('invalid pubkey')
                     return False
 
         # Iterate through the blockcahin to find the txs from the input
         if isBroadcast:
+            if broadcastBlock == None:
+                return False
             currBlock = broadcastBlock.getNext()
         else:
             currBlock = self.BlockchainHead
         while currBlock != None:
             blockTx = currBlock.getTX()
-
+            if blockTx == None:
+                return False
+            ins = blockTx.getInputs()
+            if ins == None :
+                return False
             #Check to see if the input of the tx of this block contains any inputs of 
             # the tx that is being verified
-            if self.doubleSpending(blockTx.getInputs(), inputs):
-                print('double spending')
+            if self.doubleSpending(ins, inputs):
+                # print('double spending')
                 return False
 
             # check to see if this tx output is the associated input value
@@ -128,7 +136,7 @@ class Node:
         
         # if there are any elements left in the map then input is invalid
         if len(mappedIns) != 0:
-            print('not all elements were removed')
+            # print('not all elements were removed')
             return False
 
         # check that the pk can verify this transaction
@@ -136,11 +144,13 @@ class Node:
         pk.verify( tx.getSig() , encoder=HexEncoder)
 
         # Verify the sum of the input output values are equal
+        outputVal = 0
         for ele in outputs:
-            inputCoinVals -= ele['value']
-            if inputCoinVals < 0:
-                print('sum of coins is not equal')
-                return False
+            outputVal += ele['value']
+        
+        if inputCoinVals != outputVal:
+            # print('mismatch')
+            return False
 
         return True
 
@@ -180,13 +190,16 @@ class Node:
 
 
     def process(self, tx):
-        print('processing in node')
+        # print('processing in node')
         if self.BlockchainHead == None:
             return
+        
+        if tx == None:
+            return None
         # verify tx is not on the blockcahin
         # print('verify tx is not in chain')
         if not self.txNotInChain(tx, False, None):
-            print('in chain')
+            # print('in chain')
             return None
         
         # verify that the tx is valid structure
@@ -206,14 +219,18 @@ class Node:
         self.BlockchainHead = newBlock
         # print('added block to chain')
         # return block
-        print('finsihed processing and added new node')
+        # print('finsihed processing and added new node')
         return newBlock
 
 
     def verify(self, broadcast):
         #Verify the POW
+        if broadcast == None:
+            return None
+        if broadcast.getTX() == None or broadcast.getPrev() == None or broadcast.getNonce() == None:
+            return None
         if not self.verifyPOW(broadcast):
-            print('pow is incorrect')
+            # print('pow is incorrect')
             return None
         # print('finished verifying pow')
         #Verify prev hash
@@ -221,7 +238,7 @@ class Node:
         txString = json.dumps(previousBlock.getTX().toString())
         computedPrev = H((txString + str(previousBlock.getPrev()) + str(previousBlock.getNonce()) + str(previousBlock.getPow())).encode()).hexdigest()  
         if broadcast.getPrev() != computedPrev:
-            print('prev is not correct')
+            # print('prev is not correct')
             return None
         # print('finished verifying prev')
 
@@ -229,7 +246,7 @@ class Node:
         tx = broadcast.getTX()
         # verify tx is not on the blockcahin
         if not self.txNotInChain(tx, True, broadcast):
-            print('in chain')
+            # print('in chain')
             return None
         
         # verify that the tx is valid structure
@@ -244,7 +261,7 @@ class Node:
         if self.BlockchainHead == broadcast.getNext():
             self.addToChain(broadcast, self.BlockchainHead)
             self.BlockchainHead = broadcast
-            print('chain grew from current head')
+            # print('chain grew from current head')
             added = True
         else:
             # need to go through all the chains to find the fork this block is added to
@@ -260,14 +277,14 @@ class Node:
                     if head != self.BlockchainHead:
                         if len(list) > currLength:
                             self.BlockchainHead = broadcast
-                            print('chain grew from fork')
+                            # print('chain grew from fork')
                     break
                 elif head.getNext() == nextBlock:
                     # create another fork and add it 
                     newList = list.copy()
                     newList[-1] = broadcast
                     self.BlockchainForks[broadcast] = newList
-                    print('fork but no growth')
+                    # print('fork but no growth')
                     break
            
         if not added:

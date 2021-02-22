@@ -41,14 +41,14 @@ class nodeThread(threading.Thread):
     def processTX(self):
         if self.indexSeen in self.txPool:
             # self.looked = True
-            print('processing at the moment')
+            # print('processing at the moment')
         # if not self.txQ.empty():
             # tx = self.txQ.get()
             tx = self.txPool[self.indexSeen]
             self.indexSeen += 1
             broadcastBlock = self.node.process(tx)
             if broadcastBlock is not None:
-                print('broadcasting')
+                # print('broadcasting')
                 self.maxChainLen += 1
                 broadcastLock.acquire()
                 count = 0
@@ -57,15 +57,15 @@ class nodeThread(threading.Thread):
                         q.put(broadcastBlock)
                     count += 1
                 broadcastLock.release()
-                print('finished boradcasting')
-            print('INVALID BLOCK MAY HAVE SEEN BEFORE')
+                # print('finished boradcasting')
+            # print('INVALID BLOCK MAY HAVE SEEN BEFORE')
         else:
             time.sleep(.5)
     
     # This method processes boradcasts
     def processBroadcast(self):
         if not self.broadcastQList[self.threadID].empty():
-            print('processsing broadcast')
+            # print('processsing broadcast')
             while not self.broadcastQList[self.threadID].empty():
                 broadcast = self.broadcastQList[self.threadID].get()
                 
@@ -82,7 +82,7 @@ class nodeThread(threading.Thread):
     
     # This method will write to a new file the node's blockcahin
     def printBlockChain(self):
-        print('writing to blockchain')
+        # print('writing to blockchain')
         # filename = '/output/node' + str(self.threadID) + '.json'
         filename = 'node' + str(self.threadID) + '.json'
         # # do not need to truncate the file when open in w mode
@@ -176,7 +176,7 @@ while threadID < numNodes:
 txID = 0
 # Read in the transactions and populate the queue
 for trans in txList:
-    print('adding tx')
+    # print('adding tx')
     if trans != txList[0]:
         trans['input'] = fixPKInput(trans['input'])
         trans['output'] = fixPKOutput(trans['output'])
