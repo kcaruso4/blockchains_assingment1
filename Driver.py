@@ -33,11 +33,13 @@ class nodeThread(threading.Thread):
         self.broadcastQList = broadcastQ
         self.indexSeen = 0
         self.maxChainLen = 1
+        # self.looked = False
 
     
     # This method processing transactions
     def processTX(self):
         if self.indexSeen in self.txPool:
+            # self.looked = True
             print('processing at the moment')
         # if not self.txQ.empty():
             # tx = self.txQ.get()
@@ -172,6 +174,7 @@ while threadID < numNodes:
 txID = 0
 # Read in the transactions and populate the queue
 for trans in txList:
+    print('adding tx')
     if trans != txList[0]:
         trans['input'] = fixPKInput(trans['input'])
         trans['output'] = fixPKOutput(trans['output'])
@@ -192,6 +195,8 @@ for thread in threads:
     print('currently at this thread')
     print(at)
     while thread.maxChainLen != txID:
+        # print('size')
+        # print(thread.maxChainLen)
         pass
     at += 1
 

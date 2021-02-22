@@ -180,21 +180,23 @@ class Node:
 
 
     def process(self, tx):
+        print('processing in node')
         if self.BlockchainHead == None:
             return
         # verify tx is not on the blockcahin
-        print('verify tx is not in chain')
+        # print('verify tx is not in chain')
         if not self.txNotInChain(tx, False, None):
+            print('in chain')
             return None
         
         # verify that the tx is valid structure
-        print('verify the tx structure')
+        # print('verify the tx structure')
         if not self.validTxStructure(tx, False, None):
             print("not valid struct")
             return None
 
         # find pow and nonce and create new block
-        print('finding pow')
+        # print('finding pow')
         newBlock = self.POW(tx)
 
 
@@ -202,40 +204,46 @@ class Node:
         # get list associated with this head
         self.addToChain(newBlock, self.BlockchainHead)
         self.BlockchainHead = newBlock
-
-        print('added block to chain')
+        # print('added block to chain')
         # return block
+        print('finsihed processing and added new node')
         return newBlock
 
 
     def verify(self, broadcast):
         #Verify the POW
         if not self.verifyPOW(broadcast):
+            print('pow is incorrect')
             return None
-        print('finished verifying pow')
+        # print('finished verifying pow')
         #Verify prev hash
         previousBlock = broadcast.getNext()
         txString = json.dumps(previousBlock.getTX().toString())
         computedPrev = H((txString + str(previousBlock.getPrev()) + str(previousBlock.getNonce()) + str(previousBlock.getPow())).encode()).hexdigest()  
         if broadcast.getPrev() != computedPrev:
+            print('prev is not correct')
             return None
-        print('finished verifying prev')
+        # print('finished verifying prev')
 
         # Verify the tx
         tx = broadcast.getTX()
         # verify tx is not on the blockcahin
         if not self.txNotInChain(tx, True, broadcast):
+            print('in chain')
             return None
         
         # verify that the tx is valid structure
         if not self.validTxStructure(tx, True, broadcast):
+            print('invalid tx struct')
             return None
-        print('finsihed verifying trx)')
+        # print('finsihed verifying trx)')
         # add block to blockchain 
         added = False
         # check to see if the next block is the current or prev of the current longest chain
         if self.BlockchainHead == broadcast.getNext():
             self.addToChain(broadcast, self.BlockchainHead)
+            self.BlockchainHead = broadcast
+            print('chain grew from current head')
             added = True
         else:
             # need to go through all the chains to find the fork this block is added to
@@ -250,6 +258,7 @@ class Node:
                     if head != self.BlockchainHead:
                         if len(list) > len(self.BlockchainForks[self.BlockchainHead]):
                             self.BlockchainHead = broadcast
+                            print('chain grew from fork')
                     break
                 elif head.getNext() == nextBlock:
                     # create another fork and add it 
@@ -257,11 +266,14 @@ class Node:
                     newList[-1] = broadcast
                     self.BlockchainForks[broadcast] = newList
                     added = True
+                    print('fork but no growth')
                     break
-        print('adding block')
         if not added:
             return None
         else:
+            # print('added block')
+            # print('curr max chain len')
+            # print(len(self.BlockchainForks[self.BlockchainHead]))
             return len(self.BlockchainForks[self.BlockchainHead])
 
 

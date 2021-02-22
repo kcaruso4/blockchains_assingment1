@@ -102,7 +102,7 @@ from Transaction import Transaction
 #     data.append(transaction)
 #     data.append(doubleTransaction)
 
-
+pplSpentInTransaction = {}
 
 def createValidTX(data, listKeys):
     #get a random previous transaction
@@ -113,9 +113,36 @@ def createValidTX(data, listKeys):
     for ele in outputs:
         recipients.append(ele['pubkey'])
 
-    keyVals = {}
-    #randomly select person giving
     fromPkEncoded = random.choice(recipients)
+    if fromPkEncoded in pplSpentInTransaction:
+        usedTxs = pplSpentInTransaction[fromPkEncoded]
+        if prevtx in usedTxs:
+            return createValidTX(data, listKeys)
+        else:
+            if fromPkEncoded in pplSpentInTransaction:
+                list = pplSpentInTransaction[fromPkEncoded]
+                list.append(prevtx)
+                pplSpentInTransaction[fromPkEncoded] = list
+            else:
+                pplSpentInTransaction[fromPkEncoded] = [prevtx]
+    else:
+        pplSpentInTransaction[fromPkEncoded] = [prevtx]
+    
+    # keyVals = {}
+    # if prevtx in pplSpentInTransaction:
+    #     givers = pplSpentInTransaction[prevtx]
+    #     if set(givers) == set(recipients):
+    #         return createValidTX(data, listKeys)
+    #     else:
+    #         while (fromPkEncoded in givers) :
+    #             recipients.remove(fromPkEncoded)
+    #             fromPkEncoded = random.choice(recipients) 
+    #         givers.append(fromPkEncoded)   
+    #         pplSpentInTransaction[prevtx] = givers  
+    # else:
+    #     pplSpentInTransaction[prevtx] = [fromPkEncoded]
+    #randomly select person giving
+    
     fromSK = None
     for sk, pk in listKeys:
         if pk == fromPkEncoded:
