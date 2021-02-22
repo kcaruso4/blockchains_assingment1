@@ -102,7 +102,7 @@ from Transaction import Transaction
 #     data.append(transaction)
 #     data.append(doubleTransaction)
 
-pplSpentInTransaction = {}
+pplSpentInTransaction = set([])
 
 def createValidTX(data, listKeys):
     #get a random previous transaction
@@ -112,36 +112,29 @@ def createValidTX(data, listKeys):
     recipients = []
     for ele in outputs:
         recipients.append(ele['pubkey'])
+    
+    #if no recipients try again
+    if len(recipients) == 0:
+        return createValidTX(data, listKeys)
 
     fromPkEncoded = random.choice(recipients)
-    if fromPkEncoded in pplSpentInTransaction:
-        usedTxs = pplSpentInTransaction[fromPkEncoded]
-        if prevtx in usedTxs:
-            return createValidTX(data, listKeys)
-        else:
-            if fromPkEncoded in pplSpentInTransaction:
-                list = pplSpentInTransaction[fromPkEncoded]
-                list.append(prevtx)
-                pplSpentInTransaction[fromPkEncoded] = list
-            else:
-                pplSpentInTransaction[fromPkEncoded] = [prevtx]
-    else:
-        pplSpentInTransaction[fromPkEncoded] = [prevtx]
-    
-    # keyVals = {}
-    # if prevtx in pplSpentInTransaction:
-    #     givers = pplSpentInTransaction[prevtx]
-    #     if set(givers) == set(recipients):
+    lenBefore = len(pplSpentInTransaction)
+    pplSpentInTransaction.add((prevtx, fromPkEncoded))
+    if lenBefore == len(pplSpentInTransaction):
+        return createValidTX(data, listKeys)
+    # if fromPkEncoded in pplSpentInTransaction:
+    #     usedTxs = pplSpentInTransaction[fromPkEncoded]
+    #     if prevtx in usedTxs:
     #         return createValidTX(data, listKeys)
     #     else:
-    #         while (fromPkEncoded in givers) :
-    #             recipients.remove(fromPkEncoded)
-    #             fromPkEncoded = random.choice(recipients) 
-    #         givers.append(fromPkEncoded)   
-    #         pplSpentInTransaction[prevtx] = givers  
+    #         if fromPkEncoded in pplSpentInTransaction:
+    #             list = pplSpentInTransaction[fromPkEncoded]
+    #             list.append(prevtx)
+    #             pplSpentInTransaction[fromPkEncoded] = list
+    #         else:
+    #             pplSpentInTransaction[fromPkEncoded] = [prevtx]
     # else:
-    #     pplSpentInTransaction[prevtx] = [fromPkEncoded]
-    #randomly select person giving
+    #     pplSpentInTransaction[fromPkEncoded] = [prevtx]
     
     fromSK = None
     for sk, pk in listKeys:

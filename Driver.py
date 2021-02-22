@@ -5,6 +5,7 @@ import queue
 import sys
 import json
 import random
+from typing import no_type_check
 from Node import Node
 from Block import Block
 from Transaction import Transaction
@@ -57,6 +58,7 @@ class nodeThread(threading.Thread):
                     count += 1
                 broadcastLock.release()
                 print('finished boradcasting')
+            print('INVALID BLOCK MAY HAVE SEEN BEFORE')
         else:
             time.sleep(.5)
     
@@ -186,19 +188,29 @@ for trans in txList:
     time.sleep(random.random())
 
 # Check to see if all nodes are at proper queue length
-txID += 1
+converged = 0
 time.sleep(.5)
 prevLen = len(txPool)
 count = numNodes
 at = 0
-for thread in threads:
-    print('currently at this thread')
-    print(at)
-    while thread.maxChainLen != txID:
-        # print('size')
-        print(thread.maxChainLen)
-        pass
-    at += 1
+
+notConverged = True
+while notConverged:
+    notConverged = False
+    for thread in threads:
+        if thread.threadID == 0:
+            converged = thread.maxChainLen
+        elif thread.maxChainLen != converged:
+            notConverged = True 
+            break
+# for thread in threads:
+#     print('currently at this thread')
+#     print(at)
+#     while thread.maxChainLen < txID:
+#         # print('size')
+#         print(thread.maxChainLen)
+#         pass
+#     at += 1
 
 print('finished waiting')
 

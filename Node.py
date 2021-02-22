@@ -254,9 +254,7 @@ class Node:
                     list.append(broadcast)
                     self.BlockchainForks.pop(head)
                     self.BlockchainForks[broadcast] = list
-
-                    # Only broadcast if this fork is now equal to or greater than our current longest chain
-                    if len(list) >= currLength:
+                    if len(list) >= currLength - 1:
                         added = True
                     # if we are extending a different fork, do we need to change which list we build on
                     if head != self.BlockchainHead:
