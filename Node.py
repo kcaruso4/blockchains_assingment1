@@ -265,7 +265,6 @@ class Node:
                     newList = list.copy()
                     newList[-1] = broadcast
                     self.BlockchainForks[broadcast] = newList
-                    added = True
                     print('fork but no growth')
                     break
         if not added:
