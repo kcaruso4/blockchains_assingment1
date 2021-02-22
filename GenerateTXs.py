@@ -107,34 +107,47 @@ from Transaction import Transaction
 def createValidTX(data, listKeys):
     #get a random previous transaction
     prevtx = data[random.randint(0, len(data) - 1)]
-
-    #compute the output totals from this transaction
     outputs = prevtx.getOutputs()
-    prevTxNum = prevtx.getNum()
-    inputs = []
+
+    recipients = []
+    for ele in outputs:
+        recipients.append(ele['pubkey'])
+
     keyVals = {}
-    for txVal, pkEncoded in outputs: 
-        inputs.append([prevTxNum, [txVal, pkEncoded]])
-        if pkEncoded in keyVals:
-            keyVals[pkEncoded] += txVal
-        else:
-            keyVals[pkEncoded] = txVal
-
-    #Randomly create output for this transaction
-    newOutput = []
-
     #randomly select person giving
-    fromPkEncoded = random.choice(list(keyVals))
+    fromPkEncoded = random.choice(recipients)
     fromSK = None
     for sk, pk in listKeys:
         if pk == fromPkEncoded:
             fromSK = sk
+    
+    # WILL LATER IMPLEMENT ABITLIY TO GET OUTPUT FROM MUTLIPLE PREV TX
+    # get all possible coins from this tx that the person can spend
+    prevTxNum = prevtx.getNum()
+    val = 0
+    inputs = []
+    for ele in outputs: 
+        txVal = ele['value']
+        pkEncoded = ele['pubkey']
+        # determine how much someone can give from this transaction
+        if pkEncoded == fromPkEncoded:
+            val += txVal
+        
+            #create temporary dictionary for input to be added
+            tempDict = {}
+            tempDict['number'] = prevTxNum
+            tempOutput = {}
+            tempOutput['value'] = txVal
+            tempOutput['pubkey'] = pkEncoded
+            tempDict['output'] = tempOutput
+            inputs.append(tempDict)
+            # inputs.append([prevTxNum, [txVal, pkEncoded]])
 
-    val = keyVals[fromPkEncoded]
+    #Randomly create output for this transaction
+    newOutput = []
 
     #randomly select the number of transactions 
-    numberOfTxs = random.randint(0, len(listKeys))
-
+    numberOfTxs = random.randint(0, 2 * len(inputs))
     for i in range(numberOfTxs):
         #randomly select a person to give the value 
         toSK, toPkEncoded = listKeys[random.randint(0, len(listKeys)) - 1]
@@ -142,19 +155,29 @@ def createValidTX(data, listKeys):
         #randomly select the amount to give to that person
         newVal = random.randint(0, val)
         val -= newVal
-        newOutput.append([newVal, toPkEncoded])
+        tempOutput = {}
+        tempOutput['value'] = newVal
+        tempOutput['pubkey'] = toPkEncoded
+        newOutput.append(tempOutput)
         if val == 0:
             break
         elif val <= 1:
-            newOutput.append([val, fromPkEncoded])
+            tempOutput = {}
+            tempOutput['value'] = val
+            tempOutput['pubkey'] = fromPkEncoded
+            newOutput.append(tempOutput)
             val = 0
             break
     
     if val != 0:
-        newOutput.append([val, fromPkEncoded])
+        tempOutput = {}
+        tempOutput['value'] = val
+        tempOutput['pubkey'] = fromPkEncoded
+        newOutput.append(tempOutput)
 
     txSig = fromSK.sign( (str(inputs) + str(newOutput)).encode() , encoder=HexEncoder)
-    txNumber = H((str(inputs) + str(newOutput) + str(txSig.signature)).encode()).hexdigest()
+    # txNumber = H((str(inputs) + str(newOutput) + str(txSig.signature)).encode()).hexdigest()
+    txNumber = H((str(inputs) + str(newOutput) + str(txSig)).encode()).hexdigest()
     return Transaction(txNumber, inputs, newOutput, txSig)
 
     
@@ -182,11 +205,15 @@ for i in range(numSigs):
 firstInput = []
 firstOutput = []
 for sk, pk in listSkPkPairs:
-    firstOutput.append([10, pk])
+    tempDict = {}
+    tempDict['value'] = 10
+    tempDict['pubkey'] = pk
+    firstOutput.append(tempDict)
 
 sk0, pkEncoded0 = listSkPkPairs[0]
 firstSig = sk0.sign((str(firstInput) + str(firstOutput)).encode(), encoder=HexEncoder)
-firstNum = H((str(firstInput) + str(firstOutput) + str(firstSig.signature)).encode()).hexdigest()
+# firstNum = H((str(firstInput) + str(firstOutput) + str(firstSig.signature)).encode()).hexdigest()
+firstNum = H((str(firstInput) + str(firstOutput) + str(firstSig)).encode()).hexdigest()
 
 # Create the genesis transaction
 genesis = Transaction(firstNum, firstInput, firstOutput, firstSig)

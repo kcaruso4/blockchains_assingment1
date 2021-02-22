@@ -1,5 +1,6 @@
 from hashlib import sha256 as H
 import sys
+import json
 
 class Block:
     def __init__(self, transaction, prev, nonce, pow, next):
@@ -24,7 +25,10 @@ class Block:
     def getNext(self):
         if self.nextBlock == None:
             return None
-        elif self.prev == H(self.nextBlock.toString()).hexdigest():
+        prevBlock = self.nextBlock
+        txString = json.dumps(prevBlock.getTX().toString())
+        hashValue = H((txString + str(prevBlock.getPrev()) + str(prevBlock.getNonce()) + str(prevBlock.getPow())).encode()).hexdigest()  
+        if self.prev == hashValue:
             return self.nextBlock
         else:
             sys.stderr.write("Blockchain has been tampered with")
@@ -38,10 +42,18 @@ class Block:
     def toString(self):
         #May have to convert nonce to hex later
         data = {}
+        
         data['tx'] = self.transaction.toString()
+        
         data['prev'] = self.prev
+        if (type(data['prev']) == bytes):
+            data['prev'] = self.prev.hex()
         data['nonce'] = self.nonce
+        if (type(data['nonce']) == bytes):
+            data['nonce'] = self.nonce.hex()
         data['pow'] = self.pow
+        if (type(data['pow']) == bytes):
+            data['pow'] = self.pow.hex() 
         return data
 
 

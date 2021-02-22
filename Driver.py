@@ -32,20 +32,21 @@ class nodeThread(threading.Thread):
         self.txPool = txPool
         self.broadcastQList = broadcastQ
         self.indexSeen = 0
+        self.maxChainLen = 1
 
     
     # This method processing transactions
     def processTX(self):
         if self.indexSeen in self.txPool:
+            print('processing at the moment')
         # if not self.txQ.empty():
             # tx = self.txQ.get()
             tx = self.txPool[self.indexSeen]
             self.indexSeen += 1
-            # QUESTION: WHAT SHOULD YOU DO IF THE TX YOU PULLED
-            # IS ALREADY IN THE BLOCKCHAIN? 
-            # FOR NOW RETURN NULL IF PROCESSING FAILS
             broadcastBlock = self.node.process(tx)
             if broadcastBlock is not None:
+                print('broadcasting')
+                self.maxChainLen += 1
                 broadcastLock.acquire()
                 count = 0
                 for q in self.broadcastQList:
@@ -53,46 +54,45 @@ class nodeThread(threading.Thread):
                         q.put(broadcastBlock)
                     count += 1
                 broadcastLock.release()
+                print('finished boradcasting')
         else:
             time.sleep(.5)
     
     # This method processes boradcasts
     def processBroadcast(self):
         if not self.broadcastQList[self.threadID].empty():
+            print('processsing broadcast')
             while not self.broadcastQList[self.threadID].empty():
                 broadcast = self.broadcastQList[self.threadID].get()
                 
                 # Check if the block is valid
                 valid = self.node.verify(broadcast)
                 if valid is not None:
+                    self.maxChainLen = valid
                     count = 0
                     # flood validated block to other queues
                     for q in self.broadcastQList:
                         if count != self.threadID:
                             q.put(broadcast)
                         count += 1
-                
-    # # This method will return any invalidated transactions
-    # def returnInvalidatedTX(self):
-    #     transactions = self.node.getInvalidatedTX()
-    #     count = 0
-    #     for tx in transactions:
-    #         self.txQ.add(tx, count)
-    #         count += 1
-
+    
     # This method will write to a new file the node's blockcahin
     def printBlockChain(self):
-        filename = '/output/node' + self.threadID + '.txt'
-        # do not need to truncate the file when open in w mode
-        file = open(filename, 'w')
-        file.write(self.node.getBlockchain())
-        file.close()
+        print('writing to blockchain')
+        # filename = '/output/node' + str(self.threadID) + '.json'
+        filename = 'node' + str(self.threadID) + '.json'
+        # # do not need to truncate the file when open in w mode
+        # file = open(filename, 'w')
+        # file.write(self.node.getBlockchain())
+        # file.close()
+        with open(filename, 'w') as outfile:
+            json.dump(self.node.getBlockchain(), outfile)
+            # outfile.write(str(self.node.getBlockchain()))
     
     def run(self):
         while not exitFlag:
             self.processTX()
             self.processBroadcast()
-            # self.returnInvalidatedTX()
         self.printBlockChain()
 
 
@@ -179,25 +179,40 @@ for trans in txList:
         newTX = Transaction(trans['number'], trans['input'], trans['output'], trans['sig'])
         # txQueue.add(newTX, txID)
         txPool[txID] = newTX
-    txID += 1
+        txID += 1
     time.sleep(random.random())
 
-# Check to see if the pool is no longer growing and all the broadcast queues are empty
+# Check to see if all nodes are at proper queue length
+txID += 1
 time.sleep(.5)
 prevLen = len(txPool)
+count = numNodes
+at = 0
+for thread in threads:
+    print('currently at this thread')
+    print(at)
+    while thread.maxChainLen != txID:
+        pass
+    at += 1
+
+print('finished waiting')
+
 # while not txQueue.empty():
-while prevLen < len(txPool):
-    currLen = len(txPool)
-    time.sleep(.5)
-    empty = numNodes
-    while empty != 0:
-        empty = 0
-        for broadq in broadcastQueue:
-            if not broadq.empty():
-                empty += 1
-    prevLen = currLen
+# while prevLen < len(txPool):
+    # currLen = len(txPool)
+    # time.sleep(.5)
+    # empty = numNodes
+    # while empty != 0:
+    #     empty = 0
+    #     for broadq in broadcastQueue:
+    #         if not broadq.empty():
+    #             empty += 1
+    # prevLen = currLen
+
 
 exitFlag = 1
 
 for thread in threads: 
     thread.join()
+
+print( 'complete')
