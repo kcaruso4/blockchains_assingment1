@@ -1,6 +1,6 @@
 # Partners
 * Keilani Caruso kcaruso4
-* Kevin Sherman (add JHED here)
+* Kevin Sherman ksherma6
 
 # How to run the Driver
 The driver will be able to run so long as a json file is supplied. Optionally, if a user would like to specify the number of nodes running they should enter the number of nodes (integer value) and then the file to read transactions from. 
