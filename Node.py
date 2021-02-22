@@ -1,11 +1,7 @@
 import json
-from json import encoder
-from nacl import encoding
-
 from nacl.encoding import HexEncoder
 from Block import Block
 from hashlib import sha256 as H
-from Transaction import Transaction
 from nacl.signing import VerifyKey
 
 class Node:
@@ -26,7 +22,6 @@ class Node:
         return listStr
 
     def generateBlock(self, tx, prev, nonce, pow):
-        # print('creating block')
         block = Block(tx, prev, nonce, pow, self.BlockchainHead)
         return block
 
@@ -67,7 +62,6 @@ class Node:
         return
 
     def doubleSpending(self, input1, input2):
-        # print('looking at double spending')
         mapInput1 = {}
         #put all the number output pairs for input 1 into a map
         for ele in input1:
@@ -120,7 +114,6 @@ class Node:
             #Check to see if the input of the tx of this block contains any inputs of 
             # the tx that is being verified
             if self.doubleSpending(ins, inputs):
-                # print('double spending')
                 return False
 
             # check to see if this tx output is the associated input value
@@ -136,14 +129,11 @@ class Node:
                         inputCoinVals += out['value']
                 # Because we found the associated tx we now remove it from the map
                 mappedIns.pop(blockTx.getNum())
-                
-                # inputCoinVals += mappedOutputs['value']
 
             currBlock = currBlock.getNext()
         
         # if there are any elements left in the map then input is invalid
         if len(mappedIns) != 0:
-            # print('not all elements were removed')
             return False
 
         # check that the pk can verify this transaction
@@ -156,13 +146,11 @@ class Node:
             outputVal += ele['value']
         
         if inputCoinVals != outputVal:
-            # print('mismatch')
             return False
 
         return True
 
     def TxNumHashIsValid(self, tx):
-        # txNumber = H((str(tx.getInputs()) + str(tx.getOutputs()) + str(tx.getSig().signature)).encode()).hexdigest()
         txNumber = H((str(tx.getInputs()) + str(tx.getOutputs()) + str(tx.getSig())).encode()).hexdigest()
         if txNumber != tx.getNum():
             return False
@@ -197,26 +185,22 @@ class Node:
 
 
     def process(self, tx):
-        # print('processing in node')
         if self.BlockchainHead == None:
             return
         
         if tx == None:
             return None
         # verify tx is not on the blockcahin
-        # print('verify tx is not in chain')
         if not self.txNotInChain(tx, False, None):
             # print('in chain')
             return None
         
         # verify that the tx is valid structure
-        # print('verify the tx structure')
         if not self.validTxStructure(tx, False, None):
             print("not valid struct")
             return None
 
         # find pow and nonce and create new block
-        # print('finding pow')
         newBlock = self.POW(tx)
 
 
@@ -224,9 +208,6 @@ class Node:
         # get list associated with this head
         self.addToChain(newBlock, self.BlockchainHead)
         self.BlockchainHead = newBlock
-        # print('added block to chain')
-        # return block
-        # print('finsihed processing and added new node')
         return newBlock
 
 
@@ -237,30 +218,24 @@ class Node:
         if broadcast.getTX() == None or broadcast.getPrev() == None or broadcast.getNonce() == None:
             return None
         if not self.verifyPOW(broadcast):
-            # print('pow is incorrect')
             return None
-        # print('finished verifying pow')
         #Verify prev hash
         previousBlock = broadcast.getNext()
         txString = json.dumps(previousBlock.getTX().toString())
         computedPrev = H((txString + str(previousBlock.getPrev()) + str(previousBlock.getNonce()) + str(previousBlock.getPow())).encode()).hexdigest()  
         if broadcast.getPrev() != computedPrev:
-            # print('prev is not correct')
             return None
-        # print('finished verifying prev')
 
         # Verify the tx
         tx = broadcast.getTX()
         # verify tx is not on the blockcahin
         if not self.txNotInChain(tx, True, broadcast):
-            # print('in chain')
             return None
         
         # verify that the tx is valid structure
         if not self.validTxStructure(tx, True, broadcast):
             print('invalid tx struct')
             return None
-        # print('finsihed verifying trx)')
         # add block to blockchain 
         added = False
         currLength = len(self.BlockchainForks[self.BlockchainHead])
@@ -268,7 +243,6 @@ class Node:
         if self.BlockchainHead == broadcast.getNext():
             self.addToChain(broadcast, self.BlockchainHead)
             self.BlockchainHead = broadcast
-            # print('chain grew from current head')
             added = True
         else:
             # need to go through all the chains to find the fork this block is added to
@@ -284,14 +258,12 @@ class Node:
                     if head != self.BlockchainHead:
                         if len(list) > currLength:
                             self.BlockchainHead = broadcast
-                            # print('chain grew from fork')
                     break
                 elif head.getNext() == nextBlock:
                     # create another fork and add it 
                     newList = list.copy()
                     newList[-1] = broadcast
                     self.BlockchainForks[broadcast] = newList
-                    # print('fork but no growth')
                     break
            
         if not added:

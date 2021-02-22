@@ -1,13 +1,9 @@
 import sys
 import json
 import random
-import binascii
-import numpy as np
 from hashlib import sha256 as H
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
-from json import encoder
 from Transaction import Transaction
 
 
@@ -237,6 +233,7 @@ data.append(genesis)
 dataString.append(genesis.toString())
 
 for i in range(numTx):
+    #For Testing Run
     # if i % 3 == 0:
         # createDoubleSpendingTX(data, listSkPkPairs, dataString)
         # createTXWithMisingFields(data, listSkPkPairs, dataString)

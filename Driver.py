@@ -1,19 +1,14 @@
-import binascii
 import threading
 import time
 import queue
 import sys
 import json
 import random
-from typing import no_type_check
 from Node import Node
 from Block import Block
 from Transaction import Transaction
-from UniquePriorityQueue import UniquePriorityQueue
 from hashlib import sha256 as H
 from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 
 
 exitFlag = 0
@@ -69,8 +64,6 @@ class nodeThread(threading.Thread):
                     count += 1
                 broadcastLock.release()
 
-                # print('finished boradcasting')
-            # print('INVALID BLOCK MAY HAVE SEEN BEFORE')
         else:
             time.sleep(.5)
     
@@ -192,7 +185,6 @@ while threadID < numNodes:
 txID = 0
 # Read in the transactions and populate the queue
 for trans in txList:
-    # print('adding tx')
     if trans != txList[0]:
         trans['input'] = fixPKInput(trans['input'])
         trans['output'] = fixPKOutput(trans['output'])
@@ -219,11 +211,7 @@ while notConverged:
             notConverged = True 
             break
 
-print('finished waiting')
-
 exitFlag = 1
 
 for thread in threads: 
     thread.join()
-
-print( 'complete')
